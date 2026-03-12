@@ -1,16 +1,32 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
-export default function UploadZone({ onUpload, isLoading }) {
+export default function UploadZone({ onUpload, isLoading, onError, resetKey }) {
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState('');
   const inputRef = useRef(null);
 
   const VALID_EXT = ['pdf', 'jpg', 'jpeg', 'png'];
+  const MAX_SIZE = 10 * 1024 * 1024;
 
-  const isValid = (f) => {
-    if (!f) return false;
+  const validate = (f) => {
+    if (!f) return { ok: false, msg: 'Only PDF, JPG, PNG allowed' };
     const ext = f.name.split('.').pop().toLowerCase();
-    return VALID_EXT.includes(ext);
+    if (!VALID_EXT.includes(ext)) return { ok: false, msg: 'Only PDF, JPG, PNG allowed' };
+    if (f.size > MAX_SIZE) return { ok: false, msg: 'File must be under 10MB' };
+    return { ok: true };
+  };
+
+  useEffect(() => {
+    setFile(null);
+    setPreview('');
+  }, [resetKey]);
+
+  const generatePreview = (f) => {
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => setPreview(reader.result || '');
+    reader.readAsDataURL(f);
   };
 
   const handleDrag = (e) => {
@@ -24,12 +40,32 @@ export default function UploadZone({ onUpload, isLoading }) {
     e.stopPropagation();
     setDragActive(false);
     const f = e.dataTransfer.files?.[0];
-    if (f && isValid(f)) setFile(f);
+    if (!f) return;
+    const res = validate(f);
+    if (res.ok) {
+      setFile(f);
+      generatePreview(f);
+      onError?.(null);
+    } else {
+      onError?.(res.msg);
+      setFile(null);
+      setPreview('');
+    }
   };
 
   const handleChange = (e) => {
     const f = e.target.files?.[0];
-    if (f && isValid(f)) setFile(f);
+    if (!f) return;
+    const res = validate(f);
+    if (res.ok) {
+      setFile(f);
+      generatePreview(f);
+      onError?.(null);
+    } else {
+      onError?.(res.msg);
+      setFile(null);
+      setPreview('');
+    }
   };
 
   return (
@@ -95,10 +131,23 @@ export default function UploadZone({ onUpload, isLoading }) {
       {/* Action bar */}
       {file && !isLoading && (
         <div className="upload-actions">
-          <button className="btn btn-ghost" onClick={(e) => { e.stopPropagation(); setFile(null); }}>
+          <button className="btn btn-ghost" onClick={(e) => { e.stopPropagation(); setFile(null); setPreview(''); onError?.(null); }}>
             Remove
           </button>
-          <button className="btn btn-primary" onClick={(e) => { e.stopPropagation(); onUpload(file); }}>
+          <button
+            className="btn btn-primary"
+            disabled={!file}
+            onClick={(e) => {
+              e.stopPropagation();
+              const res = validate(file);
+              if (!res.ok) {
+                onError?.(res.msg);
+                return;
+              }
+              onError?.(null);
+              onUpload(file, preview, file.name);
+            }}
+          >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
             </svg>

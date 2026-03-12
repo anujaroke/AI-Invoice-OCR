@@ -17,6 +17,7 @@ function App() {
   const [rawText, setRawText] = useState('');
   const [resultData, setResultData] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [uploadResetKey, setUploadResetKey] = useState(0);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -26,6 +27,7 @@ function App() {
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
 
   const handleFileUpload = async (file) => {
+    if (!file) return;
     setAppState('extracting_text');
     setErrorMessage(null);
     setRawText('');
@@ -41,13 +43,17 @@ function App() {
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Server returned ${response.status}`);
+        const backendError = errorData.error || errorData.detail;
+        throw new Error(backendError || `Server returned ${response.status}`);
       }
       const data = await response.json();
       setRawText(data.raw_text);
       setAppState('review_text');
     } catch (error) {
-      setErrorMessage(error.message || 'An error occurred during text extraction.');
+      const msg = (error.message && error.message.includes('Failed to fetch'))
+        ? 'Could not connect to server. Make sure backend is running'
+        : (error.message || 'An error occurred during text extraction.');
+      setErrorMessage(msg);
       setAppState('idle');
     }
   };
@@ -64,13 +70,17 @@ function App() {
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Server returned ${response.status}`);
+        const backendError = errorData.error || errorData.detail;
+        throw new Error(backendError || `Server returned ${response.status}`);
       }
       const data = await response.json();
       setResultData(data);
       setAppState('results');
     } catch (error) {
-      setErrorMessage(error.message || 'An error occurred during JSON structuring.');
+      const msg = (error.message && error.message.includes('Failed to fetch'))
+        ? 'Could not connect to server. Make sure backend is running'
+        : (error.message || 'An error occurred during JSON structuring.');
+      setErrorMessage(msg);
       setAppState('review_text');
     }
   };
@@ -80,7 +90,21 @@ function App() {
     setRawText('');
     setResultData(null);
     setErrorMessage(null);
+    setUploadResetKey((n) => n + 1);
   };
+
+  const ErrorBanner = ({ message, onDismiss, onRetry }) => (
+    <div className="error-banner fancy">
+      <div className="error-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
+      </div>
+      <div className="error-text">{message}</div>
+      <div className="error-actions">
+        <button className="error-btn" onClick={onRetry}>Try Again</button>
+        <button className="error-dismiss" onClick={onDismiss} aria-label="Dismiss">×</button>
+      </div>
+    </div>
+  );
 
   const steps = [
     { key: 'upload', label: 'Upload', done: appState !== 'idle' },
@@ -150,11 +174,11 @@ function App() {
 
         {/* Error */}
         {errorMessage && (
-          <div className="error-banner">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-            <span>{errorMessage}</span>
-            <button onClick={() => setErrorMessage(null)} className="error-dismiss">&times;</button>
-          </div>
+          <ErrorBanner
+            message={errorMessage}
+            onDismiss={() => setErrorMessage(null)}
+            onRetry={handleReset}
+          />
         )}
 
         {/* Upload */}
@@ -163,6 +187,8 @@ function App() {
             <UploadZone
               onUpload={handleFileUpload}
               isLoading={appState === 'extracting_text'}
+              onError={setErrorMessage}
+              resetKey={uploadResetKey}
             />
           </section>
         )}
@@ -182,7 +208,7 @@ function App() {
         {/* Results */}
         {appState === 'results' && resultData && (
           <section className="section-results">
-            <InvoiceDisplay data={resultData} />
+            <InvoiceDisplay data={resultData} onDataChange={setResultData} />
             <JSONViewer data={resultData} />
           </section>
         )}
@@ -191,6 +217,46 @@ function App() {
       <footer className="app-footer">
         Built with Gemini AI &middot; Powered by React &amp; FastAPI
       </footer>
+
+      <style>{`
+        .error-banner.fancy {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          background: #2d1515;
+          border: 1px solid #ef4444;
+          color: #fca5a5;
+          padding: 0.65rem 0.9rem;
+          border-radius: 10px;
+          box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+          transform: translateY(0);
+          animation: drop-in 220ms ease-out;
+        }
+        @keyframes drop-in {
+          from { transform: translateY(-8px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .error-icon { display: grid; place-items: center; }
+        .error-text { flex: 1; font-weight: 600; }
+        .error-actions { display: flex; align-items: center; gap: 0.4rem; }
+        .error-btn {
+          background: #ef4444;
+          color: white;
+          border: 1px solid #ef4444;
+          padding: 0.3rem 0.65rem;
+          border-radius: 6px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+        .error-dismiss {
+          background: transparent;
+          border: none;
+          color: #fca5a5;
+          font-size: 1.25rem;
+          line-height: 1;
+          cursor: pointer;
+        }
+      `}</style>
     </div>
   );
 }

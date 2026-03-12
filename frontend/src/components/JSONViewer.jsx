@@ -27,18 +27,20 @@ export default function JSONViewer({ data }) {
   const handleDownloadCSV = () => {
     if (!data) return;
     const esc = (v) => {
-      if (v === null || v === undefined) return '';
-      const s = String(v);
-      return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
+      const clean = (v === null || v === undefined || v === '') ? 'NOT FOUND' : String(v);
+      return (clean.includes(',') || clean.includes('"') || clean.includes('\n'))
+        ? `"${clean.replace(/"/g, '""')}"`
+        : clean;
     };
+
     const lines = [];
-    lines.push('INVOICE HEADER');
-    lines.push(`Invoice Number,${esc(data.invoice?.invoice_number)}`);
-    lines.push(`Date,${esc(data.invoice?.invoice_date)}`);
+    lines.push('INVOICE SUMMARY');
+    lines.push(`Invoice No,${esc(data.invoice?.invoice_number)}`);
+    lines.push(`Invoice Date,${esc(data.invoice?.invoice_date)}`);
     lines.push(`Place of Supply,${esc(data.invoice?.place_of_supply)}`);
     lines.push(`Payment Terms,${esc(data.invoice?.payment_terms)}`);
     lines.push('');
-    lines.push('SUPPLIER INFO');
+    lines.push('SUPPLIER DETAILS');
     lines.push(`Name,${esc(data.supplier?.name)}`);
     lines.push(`GSTIN,${esc(data.supplier?.gstin)}`);
     lines.push(`Address,${esc(data.supplier?.address)}`);
@@ -47,18 +49,23 @@ export default function JSONViewer({ data }) {
     lines.push('LINE ITEMS');
     lines.push('Item Name,HSN,Qty,UOM,Rate,Amount');
     if (data.items?.length) {
-      data.items.forEach(i => lines.push(`${esc(i.name)},${esc(i.hsn)},${esc(i.qty)},${esc(i.uom)},${esc(i.rate)},${esc(i.amount)}`));
+      data.items.forEach((i) => {
+        lines.push(`${esc(i?.name)},${esc(i?.hsn)},${esc(i?.qty)},${esc(i?.uom)},${esc(i?.rate)},${esc(i?.amount)}`);
+      });
     } else {
-      lines.push('No items found');
+      lines.push('NOT FOUND,NOT FOUND,NOT FOUND,NOT FOUND,NOT FOUND,NOT FOUND');
     }
     lines.push('');
-    lines.push('TAX & TOTALS');
+    lines.push('TAX BREAKDOWN');
     lines.push(`CGST,${esc(data.tax?.cgst)}`);
     lines.push(`SGST,${esc(data.tax?.sgst)}`);
     lines.push(`IGST,${esc(data.tax?.igst)}`);
+    lines.push('');
+    lines.push('TOTALS');
     lines.push(`Sub Total,${esc(data.totals?.sub_total)}`);
     lines.push(`Tax Total,${esc(data.totals?.tax_total)}`);
     lines.push(`Grand Total,${esc(data.totals?.grand_total)}`);
+
     const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
