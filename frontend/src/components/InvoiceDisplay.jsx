@@ -38,13 +38,13 @@ export default function InvoiceDisplay({ data, onDataChange }) {
   };
 
   const baseConfidence = (value) => {
-    if (value === null || value === undefined || value === '') return { level: 'LOW', color: '#ef4444' };
-    if (typeof value === 'string' && value.trim().length < 3) return { level: 'MEDIUM', color: '#eab308' };
-    if (typeof value === 'number' && value === 0) return { level: 'MEDIUM', color: '#eab308' };
-    return { level: 'HIGH', color: '#22c55e' };
+    if (value === null || value === undefined || value === '') return { level: 'LOW', color: 'var(--danger)' };
+    if (typeof value === 'string' && value.trim().length < 3) return { level: 'MEDIUM', color: 'var(--warning)' };
+    if (typeof value === 'number' && value === 0) return { level: 'MEDIUM', color: 'var(--warning)' };
+    return { level: 'HIGH', color: 'var(--success)' };
   };
 
-  const medium = { level: 'MEDIUM', color: '#eab308' };
+  const medium = { level: 'MEDIUM', color: 'var(--warning)' };
 
   const getConfidence = (raw, path, itemCtx) => {
     const { value } = unwrap(raw);
@@ -216,7 +216,7 @@ export default function InvoiceDisplay({ data, onDataChange }) {
 
       {/* Cards */}
       <div className="cards-grid">
-        <div className="card info-card">
+        <div className="glass-panel info-card animate-in" style={{ animationDelay: '0.1s' }}>
           <div className="card-header"><span className="card-title">Supplier</span></div>
           <div className="card-body">
             <Field label="Name" d={supplier?.name} path="supplier.name" pathArr={["supplier", "name"]} />
@@ -226,7 +226,7 @@ export default function InvoiceDisplay({ data, onDataChange }) {
           </div>
         </div>
 
-        <div className="card info-card">
+        <div className="glass-panel info-card animate-in" style={{ animationDelay: '0.2s' }}>
           <div className="card-header"><span className="card-title">Invoice</span></div>
           <div className="card-body">
             <Field label="Number" d={invoice?.invoice_number} path="invoice.invoice_number" pathArr={["invoice", "invoice_number"]} />
@@ -238,7 +238,7 @@ export default function InvoiceDisplay({ data, onDataChange }) {
         </div>
 
         {recipient && (
-          <div className="card info-card">
+          <div className="glass-panel info-card animate-in" style={{ animationDelay: '0.3s' }}>
             <div className="card-header"><span className="card-title">Recipient</span></div>
             <div className="card-body">
               {renderDynamicFields(recipient, ["invoice", "recipient"], "invoice.recipient")}
@@ -246,7 +246,7 @@ export default function InvoiceDisplay({ data, onDataChange }) {
           </div>
         )}
 
-        <div className="card info-card">
+        <div className="glass-panel info-card animate-in" style={{ animationDelay: '0.4s' }}>
           <div className="card-header"><span className="card-title">Tax Breakdown</span></div>
           <div className="card-body">
             <Field label="CGST" d={tax?.cgst} currency path="tax.cgst" pathArr={["tax", "cgst"]} />
@@ -255,7 +255,7 @@ export default function InvoiceDisplay({ data, onDataChange }) {
           </div>
         </div>
 
-        <div className="card info-card">
+        <div className="glass-panel info-card animate-in" style={{ animationDelay: '0.5s' }}>
           <div className="card-header"><span className="card-title">Totals</span></div>
           <div className="card-body">
             <Field label="Sub Total" d={totals?.sub_total} currency path="totals.sub_total" pathArr={["totals", "sub_total"]} />
@@ -271,7 +271,7 @@ export default function InvoiceDisplay({ data, onDataChange }) {
       </div>
 
       {extraSections.length > 0 && (
-        <div className="card">
+        <div className="glass-panel animate-in" style={{ animationDelay: '0.6s' }}>
           <div className="card-header"><span className="card-title">Additional Details</span></div>
           <div className="card-body extra-sections">
             {extraSections.map(([key, val]) => (
@@ -287,13 +287,13 @@ export default function InvoiceDisplay({ data, onDataChange }) {
       )}
 
       {/* Items Table */}
-      <div className="card">
+      <div className="glass-panel animate-in" style={{ animationDelay: '0.7s' }}>
         <div className="card-header">
           <span className="card-title">Line Items</span>
           <div className="confidence-legend">
-            <span><i style={{ background: '#22c55e' }} />High</span>
-            <span><i style={{ background: '#eab308' }} />Medium</span>
-            <span><i style={{ background: '#ef4444' }} />Low</span>
+            <span><i style={{ background: 'var(--success)' }} />High</span>
+            <span><i style={{ background: 'var(--warning)' }} />Medium</span>
+            <span><i style={{ background: 'var(--danger)' }} />Low</span>
           </div>
         </div>
         <div className="table-wrap">
@@ -332,207 +332,210 @@ export default function InvoiceDisplay({ data, onDataChange }) {
         .invoice-display {
           display: flex;
           flex-direction: column;
-          gap: 1.25rem;
-          position: relative;
+          gap: 1.5rem;
         }
+
         .results-bar {
           display: flex;
-          justify-content: flex-end;
+          justify-content: space-between;
           align-items: center;
+          gap: 0.8rem;
         }
-        .edit-btn,
-        .save-btn,
-        .cancel-btn {
-          border: 1px solid transparent;
-          border-radius: 8px;
-          padding: 0.45rem 0.85rem;
-          font-weight: 600;
-          font-size: 0.85rem;
+
+        .results-spacer { flex: 1; }
+
+        .edit-btn, .save-btn, .cancel-btn {
+          border: 1px solid var(--border);
+          padding: 0.5rem 0.8rem;
+          font-weight: bold;
+          font-size: 11px;
           cursor: pointer;
-          transition: all 0.15s ease;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.3rem;
         }
+
         .edit-btn {
-          background: var(--surface);
-          color: var(--text);
-          border-color: var(--border);
+          background: var(--bg-2);
+          color: var(--text-light);
         }
-        .edit-btn:hover { border-color: var(--cyan); color: var(--cyan); }
-        .edit-actions { display: flex; gap: 0.5rem; }
+
+        .edit-actions { display: flex; gap: 0.4rem; }
+
         .save-btn {
-          background: #16a34a;
+          background: var(--green);
           color: white;
-          border-color: #16a34a;
+          border-color: var(--green);
         }
-        .save-btn:hover { filter: brightness(1.05); }
+
         .cancel-btn {
-          background: #374151;
-          color: white;
-          border-color: #4b5563;
+          background: transparent;
+          color: var(--red);
+          border-color: var(--red);
         }
-        .cancel-btn:hover { filter: brightness(1.05); }
+
         .cards-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
           gap: 1rem;
         }
+
         @media (max-width: 1024px) {
           .cards-grid { grid-template-columns: repeat(2, 1fr); }
         }
-        @media (max-width: 540px) {
+        @media (max-width: 768px) {
           .cards-grid { grid-template-columns: 1fr; }
         }
-        .info-card .card-body {
-          padding: 1rem 1.15rem;
-          display: flex;
-          flex-direction: column;
-          gap: 0.7rem;
+
+        .info-card {
+          border: 1px solid var(--border);
+          background: var(--bg);
         }
+
+        .info-card .card-body {
+          padding: 1rem;
+          flex: 1;
+        }
+
+        .card-header {
+          padding: 1rem;
+          border-bottom: 1px solid var(--border);
+          background: var(--bg);
+        }
+
+        .card-title {
+          font-size: 11px;
+          font-weight: bold;
+          color: var(--blue);
+          margin: 0;
+        }
+
         .field-row {
           display: flex;
           flex-direction: column;
-          gap: 0.15rem;
+          gap: 0.3rem;
+          padding-bottom: 0.5rem;
+          border-bottom: 1px solid var(--border);
         }
+
+        .field-row:last-child { border: none; padding-bottom: 0; }
+
         .field-label {
-          font-size: 0.72rem;
-          font-weight: 500;
-          color: var(--text-faint);
-          text-transform: uppercase;
-          letter-spacing: 0.03em;
+          font-size: 11px;
+          font-weight: bold;
+          color: var(--text-light);
         }
+
         .field-value {
-          font-size: 0.88rem;
+          font-size: 14px;
           color: var(--text);
-          word-break: break-word;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
         }
+
         .val-text {
           display: inline-flex;
           align-items: center;
-          gap: 0.35rem;
+          gap: 0.3rem;
+          flex-wrap: wrap;
         }
+
         .edit-input {
-          background: #0a1628;
-          border: 1px solid var(--cyan);
-          color: #fff;
-          border-radius: 6px;
-          padding: 0.35rem 0.5rem;
-          min-width: 140px;
+          background: var(--bg-2);
+          border: 1px solid var(--blue);
+          color: var(--text);
+          padding: 0.3rem 0.5rem;
+          font-size: 12px;
+          font-family: monospace;
         }
-        .edit-input.align-right { text-align: right; }
-        .edit-input.align-center { text-align: center; }
+
         .null-badge {
-          display: inline-block;
-          font-size: 0.65rem;
-          font-weight: 700;
-          letter-spacing: 0.04em;
-          padding: 0.15rem 0.5rem;
-          border-radius: 4px;
-          background: color-mix(in srgb, var(--red) 10%, transparent);
+          font-size: 10px;
+          padding: 0.2rem 0.4rem;
+          background: transparent;
           color: var(--red);
-          border: 1px solid color-mix(in srgb, var(--red) 20%, transparent);
+          border: 1px solid var(--red);
         }
+
         .confidence-pill {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.35rem;
-          font-size: 0.72rem;
-          font-weight: 600;
-          padding: 0.1rem 0.45rem 0.1rem 0.35rem;
-          border-radius: 999px;
+          font-size: 10px;
+          padding: 0.2rem 0.4rem;
           border: 1px solid currentColor;
-          background: color-mix(in srgb, currentColor 10%, transparent);
+          background: transparent;
         }
-        .confidence-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          display: inline-block;
-        }
-        .confidence-text {
-          line-height: 1;
-        }
+
         .grand-total-row {
-          margin-top: 0.65rem;
-          padding-top: 0.65rem;
+          margin: 0;
+          padding: 1rem 0;
           border-top: 1px solid var(--border);
-          display: flex;
-          flex-direction: column;
-          gap: 0.2rem;
         }
+
         .grand-total-value {
-          font-size: 1.55rem;
-          font-weight: 700;
-          color: var(--cyan);
+          font-size: 20px;
+          font-weight: bold;
+          color: var(--blue);
         }
-        .grand-total-value .null-badge {
-          font-size: 0.75rem;
-        }
-        .confidence-legend {
-          display: flex;
-          gap: 0.75rem;
-          font-size: 0.68rem;
-          color: var(--text-faint);
-          align-items: center;
-        }
-        .confidence-legend i {
-          display: inline-block;
-          width: 7px;
-          height: 7px;
-          border-radius: 50%;
-          margin-right: 4px;
-          vertical-align: middle;
-        }
-        .table-wrap {
-          overflow-x: auto;
-        }
+
         .items-table {
           width: 100%;
           border-collapse: collapse;
-          font-size: 0.84rem;
-          white-space: nowrap;
+          font-size: 13px;
         }
+
         .items-table th {
-          padding: 0.75rem 1rem;
-          font-size: 0.72rem;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-          color: var(--text-muted);
-          background: var(--surface);
+          padding: 0.8rem;
+          font-size: 11px;
+          font-weight: bold;
+          color: var(--text-light);
+          background: var(--bg);
           border-bottom: 1px solid var(--border);
+          text-align: left;
         }
+
         .items-table td {
-          padding: 0.7rem 1rem;
+          padding: 0.8rem;
           color: var(--text);
           border-bottom: 1px solid var(--border);
         }
-        .items-table .row-even { background: var(--card); }
-        .items-table .row-odd  { background: var(--surface); }
-        .items-table .item-name {
-          white-space: normal;
-          min-width: 200px;
+
+        .items-table .font-medium {
+          font-weight: bold;
+          color: var(--blue);
         }
-        .items-table .font-medium { font-weight: 600; }
+
         .text-left { text-align: left; }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
+
         .empty-row {
           text-align: center;
           padding: 2rem !important;
-          color: var(--text-faint);
-          font-style: italic;
+          color: var(--text-light);
         }
+
         .toast {
-          position: absolute;
-          right: 0.5rem;
-          bottom: -0.25rem;
-          transform: translateY(100%);
-          background: #0f172a;
-          color: #e2e8f0;
-          border: 1px solid var(--border);
-          padding: 0.5rem 0.75rem;
-          border-radius: 8px;
-          font-size: 0.8rem;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+          position: fixed;
+          right: 1rem;
+          bottom: 1rem;
+          background: var(--green);
+          color: white;
+          padding: 0.6rem 1rem;
+          font-size: 12px;
+          font-weight: bold;
+          z-index: 100;
+          border: 1px solid var(--green);
+        }
+
+        .extra-sections { padding: 1rem; }
+        .extra-card { margin-bottom: 1rem; }
+        .extra-title {
+          font-size: 12px;
+          font-weight: bold;
+          color: var(--text-light);
+          margin-bottom: 0.8rem;
+          padding-bottom: 0.4rem;
+          border-bottom: 1px solid var(--border);
         }
       `}</style>
     </div>

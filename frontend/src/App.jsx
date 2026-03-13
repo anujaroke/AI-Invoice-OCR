@@ -155,6 +155,17 @@ function App() {
       </nav>
 
       <main className="main-content">
+        {appState === 'idle' && (
+          <div className="hero-section">
+            <h1 className="hero-title">
+              Extract Data from <span className="hero-highlight">Invoice </span>
+            </h1>
+            <p className="hero-subtitle">
+              Automate your accounting data entry. Drop a PDF, photo, or scan, and let AI instantaneously convert it into perfectly structured JSON.
+            </p>
+          </div>
+        )}
+
         {/* Stepper */}
         <div className="stepper">
           {steps.map((step, i) => (
@@ -215,7 +226,7 @@ function App() {
       </main>
 
       <footer className="app-footer">
-        Built with Gemini AI &middot; Powered by React &amp; FastAPI
+        Built by Anuj A · Harish T · Logeshwaran A<br/>Powered by React & FastAPI
       </footer>
 
       <style>{`

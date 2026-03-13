@@ -4,14 +4,17 @@ export default function TextEditor({ initialText, onGenerate, isLoading, onCance
   const [text, setText] = useState(initialText || '');
 
   return (
-    <div className="text-editor">
+    <div className="glass-panel text-editor animate-in" style={{ animationDelay: '0.2s' }}>
       <div className="te-header">
-        <div>
+        <div className="te-header-content">
           <h3 className="te-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Review Extracted Text
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            <span className="gradient-text">Review & Edit</span>
           </h3>
-          <p className="te-subtitle">Edit the raw OCR text below if the AI missed anything before structuring.</p>
+          <p className="te-subtitle">The AI has extracted the invoice text. Review and make any corrections before generating the structured data.</p>
         </div>
       </div>
 
@@ -27,22 +30,37 @@ export default function TextEditor({ initialText, onGenerate, isLoading, onCance
         {isLoading && (
           <div className="te-overlay">
             <div className="te-overlay-content">
-              <div className="spinner" />
-              <span>Structuring Data...</span>
+              <div className="te-loader">
+                <div className="te-loader-spinner"></div>
+              </div>
+              <div className="te-overlay-text">
+                <p className="te-overlay-title">Structuring Invoice Data</p>
+                <p className="te-overlay-hint">Processing with AI...</p>
+              </div>
             </div>
           </div>
         )}
       </div>
 
       <div className="te-footer">
-        <button className="btn btn-ghost" onClick={onCancel} disabled={isLoading}>Cancel</button>
+        <button className="btn btn-ghost" onClick={onCancel} disabled={isLoading}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+          Cancel
+        </button>
         <button
           className="btn btn-primary"
           onClick={() => onGenerate(text)}
           disabled={isLoading || !text.trim()}
         >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          Generate Structured JSON
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 16 16 12 12 8"></polyline>
+            <line x1="8" y1="12" x2="16" y2="12"></line>
+          </svg>
+          Generate JSON
         </button>
       </div>
 
@@ -50,91 +68,118 @@ export default function TextEditor({ initialText, onGenerate, isLoading, onCance
         .text-editor {
           display: flex;
           flex-direction: column;
-          height: 600px;
-          background: var(--card);
+          min-height: 500px;
           border: 1px solid var(--border);
-          border-radius: 12px;
-          overflow: hidden;
+          background: var(--bg);
         }
+
         .te-header {
-          padding: 1rem 1.25rem;
+          padding: 1rem;
           border-bottom: 1px solid var(--border);
-          background: var(--surface);
+          background: var(--bg);
         }
+
         .te-title {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          font-size: 0.85rem;
-          font-weight: 700;
-          color: var(--cyan);
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
+          font-size: 14px;
+          font-weight: bold;
+          color: var(--text);
+          margin: 0 0 0.5rem 0;
+        }
+
+        .te-title svg {
+          color: var(--blue);
+        }
+
+        .te-subtitle {
+          font-size: 12px;
+          color: var(--text-light);
           margin: 0;
         }
-        .te-subtitle {
-          font-size: 0.76rem;
-          color: var(--text-muted);
-          margin: 0.35rem 0 0;
-        }
+
         .te-body {
           flex: 1;
           position: relative;
-          min-height: 0;
+          display: flex;
+          flex-direction: column;
         }
+
         .te-textarea {
-          width: 100%;
-          height: 100%;
-          padding: 1.25rem 1.5rem;
-          background: var(--card);
+          flex: 1;
+          padding: 1rem;
+          background: var(--bg);
           color: var(--text);
           border: none;
           outline: none;
           resize: none;
-          font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-          font-size: 0.82rem;
-          line-height: 1.7;
+          font-family: monospace;
+          font-size: 12px;
+          line-height: 1.6;
         }
+
+        .te-textarea::placeholder {
+          color: var(--text-light);
+        }
+
         .te-textarea:focus {
-          box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--cyan) 20%, transparent);
+          background: var(--bg-2);
         }
-        .te-textarea:disabled {
-          opacity: 0.5;
-        }
+
         .te-overlay {
           position: absolute;
           inset: 0;
-          background: var(--overlay);
-          backdrop-filter: blur(4px);
+          background: rgba(15, 18, 24, 0.8);
           display: flex;
           align-items: center;
           justify-content: center;
+          z-index: 10;
         }
+
         .te-overlay-content {
           display: flex;
           align-items: center;
-          gap: 0.75rem;
-          background: var(--surface);
+          gap: 1rem;
+          background: var(--bg);
           border: 1px solid var(--border);
-          padding: 1rem 1.75rem;
-          border-radius: 10px;
-          font-weight: 600;
-          font-size: 1rem;
-          color: var(--cyan);
-          box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+          padding: 1rem;
         }
+
+        .te-loader-spinner {
+          width: 30px;
+          height: 30px;
+          border: 2px solid var(--border);
+          border-top-color: var(--blue);
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+
+        .te-overlay-title {
+          font-weight: bold;
+          font-size: 14px;
+          color: var(--text);
+          margin: 0;
+        }
+
+        .te-overlay-hint {
+          font-size: 12px;
+          color: var(--text-light);
+          margin: 0;
+        }
+
         .te-footer {
           display: flex;
           justify-content: flex-end;
-          gap: 0.75rem;
-          padding: 0.85rem 1.25rem;
+          gap: 0.5rem;
+          padding: 1rem;
           border-top: 1px solid var(--border);
-          background: var(--surface);
+          background: var(--bg);
         }
-        .te-footer .btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.4rem;
+
+        @keyframes spin {
+          from { transform: rotate(0); }
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </div>

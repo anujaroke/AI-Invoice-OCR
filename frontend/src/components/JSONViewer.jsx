@@ -78,28 +78,47 @@ export default function JSONViewer({ data }) {
   };
 
   return (
-    <div className="json-viewer">
-      <div className="card">
+    <div className="json-viewer animate-in" style={{ animationDelay: '0.3s' }}>
+      <div className="glass-panel">
         <div className="card-header jv-header">
-          <span className="card-title">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-            Raw JSON
-          </span>
+          <div className="jv-title-group">
+            <div className="mac-controls">
+              <span className="mac-dot close"></span>
+              <span className="mac-dot minimize"></span>
+              <span className="mac-dot expand"></span>
+            </div>
+            <h3 className="card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="16 18 22 12 16 6"/>
+                <polyline points="8 6 2 12 8 18"/>
+              </svg>
+              Structured JSON Output
+            </h3>
+          </div>
           <div className="jv-actions">
-            <button className="btn btn-subtle" onClick={handleCopy}>
+            <button className="btn btn-subtle" onClick={handleCopy} title="Copy to clipboard">
               {copied ? (
-                <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Copied!</>
+                <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg><span>Copied!</span></>
               ) : (
-                <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</>
+                <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Copy</span></>
               )}
             </button>
-            <button className="btn btn-subtle" onClick={handleDownloadJSON}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              JSON
+            <button className="btn btn-subtle" onClick={handleDownloadJSON} title="Download as JSON">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <span>JSON</span>
             </button>
-            <button className="btn btn-primary jv-csv-btn" onClick={handleDownloadCSV}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-              CSV
+            <button className="btn btn-primary jv-csv-btn" onClick={handleDownloadCSV} title="Download as CSV">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+              <span>Export CSV</span>
             </button>
           </div>
         </div>
@@ -110,50 +129,97 @@ export default function JSONViewer({ data }) {
       </div>
 
       <style>{`
+        .json-viewer {
+          animation: fadeScaleIn 0.3s ease-out;
+        }
+
+        .json-viewer .glass-panel {
+          display: flex;
+          flex-direction: column;
+          min-height: 400px;
+          border: 1px solid var(--border);
+          background: var(--bg);
+        }
+
         .json-viewer .jv-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          flex-wrap: wrap;
-          gap: 0.75rem;
+          gap: 1rem;
+          padding: 1rem;
+          border-bottom: 1px solid var(--border);
+          background: var(--bg);
         }
+
+        .json-viewer .jv-title-group {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+        }
+
+        .mac-controls {
+          display: flex;
+          gap: 5px;
+          padding-right: 0.6rem;
+          border-right: 1px solid var(--border);
+        }
+
+        .mac-dot {
+          width: 9px;
+          height: 9px;
+          border-radius: 50%;
+          display: inline-block;
+        }
+
+        .mac-dot.close { background: #da3633; }
+        .mac-dot.minimize { background: #d29922; }
+        .mac-dot.expand { background: #3fb950; }
+
         .json-viewer .card-title {
           display: inline-flex;
           align-items: center;
           gap: 0.5rem;
+          font-size: 13px;
+          font-weight: bold;
+          color: var(--text);
+          margin: 0;
         }
+
+        .json-viewer .card-title svg {
+          color: var(--blue);
+        }
+
         .jv-actions {
           display: flex;
-          gap: 0.5rem;
+          gap: 0.3rem;
         }
+
         .jv-actions .btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.35rem;
-          font-size: 0.78rem;
-          padding: 0.4rem 0.85rem;
+          font-size: 11px;
+          padding: 0.4rem 0.7rem;
         }
-        .jv-csv-btn {
-          padding: 0.4rem 1rem !important;
-        }
+
         .jv-code-area {
-          background: var(--code-bg);
-          max-height: 480px;
+          flex: 1;
+          background: var(--bg);
           overflow: auto;
-          border-top: 1px solid var(--border);
+          border-radius: 0;
         }
+
         .jv-code-area pre {
           margin: 0;
-          padding: 1.25rem 1.5rem;
-          font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-          font-size: 0.8rem;
-          line-height: 1.7;
-          color: var(--cyan);
+          padding: 1rem;
+          font-family: monospace;
+          font-size: 12px;
+          line-height: 1.6;
+          color: var(--text);
           white-space: pre;
           tab-size: 2;
         }
-        .jv-code-area code {
-          color: inherit;
+
+        @keyframes fadeScaleIn {
+          0% { opacity: 0; }
+          100% { opacity: 1; }
         }
       `}</style>
     </div>
