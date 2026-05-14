@@ -216,6 +216,3 @@ Upload an invoice file for data extraction.
 - The model name might need updating (currently using `gemini-2.0-flash-exp`)
 - Check Google's documentation for the latest available models
 
-## License
-
-MIT
