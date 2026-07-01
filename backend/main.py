@@ -3,27 +3,40 @@ import io
 import json
 import base64
 import re
-from typing import Optional
+from typing import Optional, List
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import google.generativeai as genai
 from google.api_core import exceptions as g_exceptions
-from pdf2image import convert_from_bytes
+from pdf2image import convert_from_bytes, pdfinfo_from_bytes
 from PIL import Image
 from pydantic import BaseModel
+import uvicorn
 
 load_dotenv()
+
+def get_int_env(name: str, default: int) -> int:
+    try:
+        return int(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        return default
+
+def get_csv_env(name: str, default: str) -> List[str]:
+    raw = os.getenv(name, default)
+    return [value.strip() for value in raw.split(',') if value.strip()]
 
 # Configure Gemini API
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 app = FastAPI()
+MAX_PDF_PAGES = max(1, get_int_env("MAX_PDF_PAGES", 15))
+MAX_UPLOAD_SIZE_MB = max(1, get_int_env("MAX_UPLOAD_SIZE_MB", 10))
 
 # Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=get_csv_env("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,11 +51,10 @@ def clean_gemini_response(text: str) -> str:
         raise ValueError("No valid JSON found in response")
     return text[start:end+1].strip()
 
-def process_file_to_base64(file_bytes: bytes, filename: str, content_type: Optional[str]) -> str:
+def process_file_to_base64_images(file_bytes: bytes, filename: str, content_type: Optional[str]) -> List[str]:
     allowed_ext = {"pdf", "jpg", "jpeg", "png"}
-    allowed_ct = {"application/pdf", "image/jpeg", "image/png"}
     ext = filename.lower().split(".")[-1]
-    if ext not in allowed_ext or (content_type and content_type not in allowed_ct):
+    if ext not in allowed_ext:
         raise HTTPException(status_code=400, detail={"error": "Invalid file type. Please upload PDF, JPG, or PNG only"})
 
     if not file_bytes:
@@ -50,18 +62,36 @@ def process_file_to_base64(file_bytes: bytes, filename: str, content_type: Optio
 
     if ext == "pdf":
         try:
-            poppler_path = r"D:\Anuj\Projects\AI-OCR\poppler-25.12.0\Library\bin"
-            images = convert_from_bytes(file_bytes, first_page=1, last_page=1, poppler_path=poppler_path)
+            poppler_path = os.getenv("POPPLER_PATH")
+            pdf_info = pdfinfo_from_bytes(file_bytes, poppler_path=poppler_path)
+            page_count = int(pdf_info.get("Pages") or 0)
+            if page_count <= 0:
+                raise ValueError("No pages found")
+
+            if page_count > MAX_PDF_PAGES:
+                raise HTTPException(
+                    status_code=400,
+                    detail={"error": f"PDF has {page_count} pages. Maximum supported is {MAX_PDF_PAGES} pages"}
+                )
+
+            images = convert_from_bytes(file_bytes, poppler_path=poppler_path)
             if not images:
                 raise ValueError("No pages found")
-            image = images[0].convert("RGB")
-            buffered = io.BytesIO()
-            image.save(buffered, format="PNG")
-            return base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+            encoded_pages: List[str] = []
+            for image in images:
+                rgb_image = image.convert("RGB")
+                buffered = io.BytesIO()
+                rgb_image.save(buffered, format="PNG")
+                encoded_pages.append(base64.b64encode(buffered.getvalue()).decode("utf-8"))
+
+            return encoded_pages
+        except HTTPException:
+            raise
         except Exception:
             raise HTTPException(status_code=422, detail={"error": "Could not read PDF. Try uploading as JPG or PNG instead"})
 
-    return base64.b64encode(file_bytes).decode("utf-8")
+    return [base64.b64encode(file_bytes).decode("utf-8")]
 
 class ParseRequest(BaseModel):
     text: str
@@ -69,16 +99,20 @@ class ParseRequest(BaseModel):
 @app.post("/ocr")
 async def extract_raw_text(file: UploadFile = File(...)):
     file_bytes = await file.read()
-    max_size = 10 * 1024 * 1024
+    max_size = MAX_UPLOAD_SIZE_MB * 1024 * 1024
     if len(file_bytes or b"") > max_size:
-        raise HTTPException(status_code=400, detail={"error": "File too large. Maximum size is 10MB"})
+        raise HTTPException(status_code=400, detail={"error": f"File too large. Maximum size is {MAX_UPLOAD_SIZE_MB}MB"})
 
-    base64_image = process_file_to_base64(file_bytes, file.filename, file.content_type)
+    base64_images = process_file_to_base64_images(file_bytes, file.filename, file.content_type)
 
     try:
         model = genai.GenerativeModel('gemini-2.5-flash-lite')
         prompt = '''You are an expert Indian GST invoice data extraction engine.
-You will receive an invoice image that could be:
+    You will receive one or more invoice pages (for PDFs, all pages are provided in order).
+    Treat all pages as part of the same invoice document.
+    You must merge information across pages, including item tables that continue on later pages.
+
+    The invoice pages could be:
 - A printed/typed formal invoice
 - A handwritten invoice
 - A scanned or photographed bill
@@ -161,10 +195,13 @@ IMPORTANT RULES:
 - Even if invoice is blurry or low quality, extract what you can
 - Handle both inter-state (IGST) and intra-state (CGST+SGST) invoices'''
 
-        response = model.generate_content([
-            {"mime_type": "image/png", "data": base64_image},
-            prompt
-        ])
+        content_parts = [
+            {"mime_type": "image/png", "data": image_data}
+            for image_data in base64_images
+        ]
+        content_parts.append(prompt)
+
+        response = model.generate_content(content_parts)
 
         if not response.text or not response.text.strip():
             raise HTTPException(status_code=422, detail={"error": "AI could not process this image. Try a clearer photo"})
@@ -256,3 +293,7 @@ RAW OCR TEXT:
 @app.get("/")
 def read_root():
     return {"status": "ok", "message": "OCR API Server Running"}
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+

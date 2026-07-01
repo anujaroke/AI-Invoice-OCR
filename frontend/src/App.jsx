@@ -5,17 +5,108 @@ import InvoiceDisplay from './components/InvoiceDisplay';
 import JSONViewer from './components/JSONViewer';
 import TextEditor from './components/TextEditor';
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+
 function getInitialTheme() {
   const saved = localStorage.getItem('theme');
   if (saved === 'light' || saved === 'dark') return saved;
   return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
 }
 
+function unwrapValue(node) {
+  if (node && typeof node === 'object' && 'value' in node) return node.value;
+  return node;
+}
+
+function toDisplayLeaf(node) {
+  if (node && typeof node === 'object' && 'value' in node) {
+    return { value: node.value ?? null, confidence: node.confidence ?? null };
+  }
+  return { value: node ?? null, confidence: null };
+}
+
+function buildDisplayData(raw) {
+  const src = raw || {};
+  const items = Array.isArray(src.items) ? src.items : [];
+
+  return {
+    supplier: {
+      name: toDisplayLeaf(src.supplier?.name),
+      gstin: toDisplayLeaf(src.supplier?.gstin),
+      address: toDisplayLeaf(src.supplier?.address),
+      phone: toDisplayLeaf(src.supplier?.phone),
+    },
+    invoice: {
+      invoice_number: toDisplayLeaf(src.invoice?.invoice_number),
+      invoice_date: toDisplayLeaf(src.invoice?.invoice_date),
+      place_of_supply: toDisplayLeaf(src.invoice?.place_of_supply),
+      payment_terms: toDisplayLeaf(src.invoice?.payment_terms),
+    },
+    items: items.map((item) => ({
+      name: toDisplayLeaf(item?.name),
+      hsn: toDisplayLeaf(item?.hsn),
+      qty: toDisplayLeaf(item?.qty),
+      uom: toDisplayLeaf(item?.uom),
+      rate: toDisplayLeaf(item?.rate),
+      amount: toDisplayLeaf(item?.amount),
+    })),
+    tax: {
+      cgst: toDisplayLeaf(src.tax?.cgst),
+      sgst: toDisplayLeaf(src.tax?.sgst),
+      igst: toDisplayLeaf(src.tax?.igst),
+    },
+    totals: {
+      sub_total: toDisplayLeaf(src.totals?.sub_total),
+      tax_total: toDisplayLeaf(src.totals?.tax_total),
+      grand_total: toDisplayLeaf(src.totals?.grand_total),
+    },
+  };
+}
+
+function buildCleanJSON(raw) {
+  const src = raw || {};
+  const items = Array.isArray(src.items) ? src.items : [];
+
+  return {
+    supplier: {
+      name: unwrapValue(src.supplier?.name) ?? null,
+      gstin: unwrapValue(src.supplier?.gstin) ?? null,
+      address: unwrapValue(src.supplier?.address) ?? null,
+      phone: unwrapValue(src.supplier?.phone) ?? null,
+    },
+    invoice: {
+      invoice_number: unwrapValue(src.invoice?.invoice_number) ?? null,
+      invoice_date: unwrapValue(src.invoice?.invoice_date) ?? null,
+      place_of_supply: unwrapValue(src.invoice?.place_of_supply) ?? null,
+      payment_terms: unwrapValue(src.invoice?.payment_terms) ?? null,
+    },
+    items: items.map((item) => ({
+      name: unwrapValue(item?.name) ?? null,
+      hsn: unwrapValue(item?.hsn) ?? null,
+      qty: unwrapValue(item?.qty) ?? null,
+      uom: unwrapValue(item?.uom) ?? null,
+      rate: unwrapValue(item?.rate) ?? null,
+      amount: unwrapValue(item?.amount) ?? null,
+    })),
+    tax: {
+      cgst: unwrapValue(src.tax?.cgst) ?? null,
+      sgst: unwrapValue(src.tax?.sgst) ?? null,
+      igst: unwrapValue(src.tax?.igst) ?? null,
+    },
+    totals: {
+      sub_total: unwrapValue(src.totals?.sub_total) ?? null,
+      tax_total: unwrapValue(src.totals?.tax_total) ?? null,
+      grand_total: unwrapValue(src.totals?.grand_total) ?? null,
+    },
+  };
+}
+
 function App() {
   const [theme, setTheme] = useState(getInitialTheme);
   const [appState, setAppState] = useState('idle');
   const [rawText, setRawText] = useState('');
-  const [resultData, setResultData] = useState(null);
+  const [displayData, setDisplayData] = useState(null);
+  const [cleanJSON, setCleanJSON] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
   const [uploadResetKey, setUploadResetKey] = useState(0);
 
@@ -31,13 +122,14 @@ function App() {
     setAppState('extracting_text');
     setErrorMessage(null);
     setRawText('');
-    setResultData(null);
+    setDisplayData(null);
+    setCleanJSON(null);
 
     const formData = new FormData();
     formData.append('file', file);
 
     try {
-      const response = await fetch('http://localhost:8000/ocr', {
+      const response = await fetch(`${API_BASE_URL}/ocr`, {
         method: 'POST',
         body: formData,
       });
@@ -63,7 +155,7 @@ function App() {
     setErrorMessage(null);
 
     try {
-      const response = await fetch('http://localhost:8000/parse', {
+      const response = await fetch(`${API_BASE_URL}/parse`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: finalText }),
@@ -74,7 +166,9 @@ function App() {
         throw new Error(backendError || `Server returned ${response.status}`);
       }
       const data = await response.json();
-      setResultData(data);
+      const nextDisplayData = buildDisplayData(data);
+      setDisplayData(nextDisplayData);
+      setCleanJSON(buildCleanJSON(nextDisplayData));
       setAppState('results');
     } catch (error) {
       const msg = (error.message && error.message.includes('Failed to fetch'))
@@ -88,9 +182,15 @@ function App() {
   const handleReset = () => {
     setAppState('idle');
     setRawText('');
-    setResultData(null);
+    setDisplayData(null);
+    setCleanJSON(null);
     setErrorMessage(null);
     setUploadResetKey((n) => n + 1);
+  };
+
+  const handleDisplayDataChange = (nextDisplayData) => {
+    setDisplayData(nextDisplayData);
+    setCleanJSON(buildCleanJSON(nextDisplayData));
   };
 
   const ErrorBanner = ({ message, onDismiss, onRetry }) => (
@@ -217,57 +317,17 @@ function App() {
         )}
 
         {/* Results */}
-        {appState === 'results' && resultData && (
+        {appState === 'results' && displayData && (
           <section className="section-results">
-            <InvoiceDisplay data={resultData} onDataChange={setResultData} />
-            <JSONViewer data={resultData} />
+            <InvoiceDisplay data={displayData} onDataChange={handleDisplayDataChange} />
+            <JSONViewer data={cleanJSON} />
           </section>
         )}
       </main>
 
       <footer className="app-footer">
-        Built by Anuj A · Harish T · Logeshwaran A<br/>Powered by React & FastAPI
+        AI OCR workspace built with FastAPI, Gemini, and Vite.
       </footer>
-
-      <style>{`
-        .error-banner.fancy {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          background: #2d1515;
-          border: 1px solid #ef4444;
-          color: #fca5a5;
-          padding: 0.65rem 0.9rem;
-          border-radius: 10px;
-          box-shadow: 0 10px 24px rgba(0,0,0,0.18);
-          transform: translateY(0);
-          animation: drop-in 220ms ease-out;
-        }
-        @keyframes drop-in {
-          from { transform: translateY(-8px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        .error-icon { display: grid; place-items: center; }
-        .error-text { flex: 1; font-weight: 600; }
-        .error-actions { display: flex; align-items: center; gap: 0.4rem; }
-        .error-btn {
-          background: #ef4444;
-          color: white;
-          border: 1px solid #ef4444;
-          padding: 0.3rem 0.65rem;
-          border-radius: 6px;
-          font-weight: 700;
-          cursor: pointer;
-        }
-        .error-dismiss {
-          background: transparent;
-          border: none;
-          color: #fca5a5;
-          font-size: 1.25rem;
-          line-height: 1;
-          cursor: pointer;
-        }
-      `}</style>
     </div>
   );
 }

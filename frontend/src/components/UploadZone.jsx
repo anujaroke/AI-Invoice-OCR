@@ -70,6 +70,15 @@ export default function UploadZone({ onUpload, isLoading, onError, resetKey }) {
 
   return (
     <div className="glass-panel upload-zone-card animate-in" style={{ animationDelay: '0.1s' }}>
+      <div className="uz-label-row">
+        <span className="uz-label">Invoice</span>
+        <div className="uz-format-pills">
+          <span className="uz-pill">PDF</span>
+          <span className="uz-pill">JPG</span>
+          <span className="uz-pill">PNG</span>
+        </div>
+      </div>
+
       {/* Drop area */}
       <div
         className={`drop-area ${dragActive ? 'drag-over' : ''} ${isLoading ? 'disabled' : ''}`}
@@ -106,8 +115,8 @@ export default function UploadZone({ onUpload, isLoading, onError, resetKey }) {
               </svg>
             </div>
             <div className="drop-content">
-              <p className="drop-title">Drop your invoice file here</p>
-              <p className="drop-hint">or click to browse your computer</p>
+              <p className="drop-title">Drop your file here, or browse</p>
+              <p className="drop-hint">Click anywhere in this box to choose a file</p>
             </div>
             <div className="drop-separator">or</div>
             <div className="drop-badges">
@@ -176,29 +185,62 @@ export default function UploadZone({ onUpload, isLoading, onError, resetKey }) {
 
                   <style>{`
         .upload-zone-card {
-          border: 1px solid var(--border);
-          background: var(--bg);
+          border: 1px solid var(--card-border);
+          background: var(--card-bg);
+          padding: 1.25rem;
+        }
+
+        .uz-label-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.8rem;
+          gap: 0.8rem;
+        }
+
+        .uz-label {
+          font-size: 0.82rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+        }
+
+        .uz-format-pills {
+          display: inline-flex;
+          gap: 0.35rem;
+        }
+
+        .uz-pill {
+          font-size: 0.64rem;
+          font-weight: 600;
+          padding: 0.16rem 0.46rem;
+          border-radius: 999px;
+          background: var(--bg-3);
+          border: 1px solid var(--input-border);
+          color: var(--text-muted);
         }
 
         .drop-area {
-          padding: 2rem;
+          padding: 2rem 1.25rem;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          border: 2px solid var(--border);
+          border: 2px dashed var(--input-border);
+          border-radius: 0.65rem;
           cursor: pointer;
-          background: var(--bg);
+          background: var(--input-bg);
           min-height: 250px;
+          transition: all 0.2s ease;
         }
 
         .drop-area:hover {
-          background: var(--bg-2);
+          border-color: var(--text-muted);
         }
 
         .drop-area.drag-over {
-          border-color: var(--blue);
-          background: var(--bg-2);
+          border-color: var(--accent);
+          background: rgba(16, 185, 129, 0.08);
+          transform: scale(1.01);
         }
 
         .drop-inner {
@@ -224,24 +266,25 @@ export default function UploadZone({ onUpload, isLoading, onError, resetKey }) {
           display: flex;
           align-items: center;
           justify-content: center;
-          color: var(--text-light);
+          color: var(--text-muted);
         }
 
         .drop-icon.selected {
-          background: var(--blue);
+          background: var(--accent);
+          border-radius: 999px;
           color: white;
         }
 
         .drop-title {
-          font-size: 16px;
-          font-weight: bold;
-          color: var(--text);
+          font-size: 1rem;
+          font-weight: 600;
+          color: var(--text-primary);
           margin: 0;
         }
 
         .drop-hint {
-          font-size: 13px;
-          color: var(--text-light);
+          font-size: 0.84rem;
+          color: var(--text-secondary);
           margin: 0;
         }
 
@@ -253,29 +296,28 @@ export default function UploadZone({ onUpload, isLoading, onError, resetKey }) {
         .file-badge {
           padding: 0.3rem 0.6rem;
           background: var(--bg-2);
-          color: var(--text-light);
-          font-size: 12px;
-          border: 1px solid var(--border);
+          color: var(--text-secondary);
+          font-size: 0.72rem;
+          border: 1px solid var(--input-border);
+          border-radius: 0.35rem;
         }
 
         .drop-filesize {
-          font-size: 12px;
-          color: var(--text-light);
+          font-size: 0.75rem;
+          color: var(--text-muted);
           margin: 0;
         }
 
         .drop-separator {
-          color: var(--text-light);
-          font-size: 12px;
+          color: var(--text-muted);
+          font-size: 0.74rem;
         }
 
         .upload-actions {
           display: flex;
           justify-content: flex-end;
           gap: 0.5rem;
-          padding: 1rem;
-          background: var(--bg);
-          border-top: 1px solid var(--border);
+          padding: 1rem 0 0;
         }
 
         @keyframes spin {
